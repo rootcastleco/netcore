@@ -1,0 +1,32 @@
+{
+  "event_type": "netfleetgpt_push",
+  "client_payload": {
+    "files": [
+      {
+        "path": "README.md",
+        "encoding": "utf8",
+        "content": "# Netcore\nNetfleet platform scaffold. PR opened by NetfleetGPT."
+      },
+      {
+        "path": ".gitignore",
+        "encoding": "utf8",
+        "content": "node_modules/\ndist/\n.env\n*.log\ncoverage/\n"
+      },
+      {
+        "path": "ui/src/pages/Sensors.tsx",
+        "encoding": "utf8",
+        "content": "import {useEffect,useState} from 'react';type S={id:number;name:string;kind:string};export default function Sensors(){const [items,set]=useState<S[]>([]),[e,setE]=useState<string>();useEffect(()=>{const c=new AbortController();(async()=>{try{const r=await fetch(`${import.meta.env.VITE_API}/api/sensors`,{headers:{Authorization:`Bearer ${localStorage.getItem('t')}`},signal:c.signal});if(!r.ok)throw new Error(`HTTP ${r.status}`);set(await r.json())}catch(x:any){setE(x.message)}})();return()=>c.abort()},[]);if(e)return <div>Hata: {e}</div>;return <ul>{items.map(s=><li key={s.id}><b>{s.name}</b> ({s.kind})</li>)}</ul>}"
+      },
+      {
+        "path": "api/src/client/sensors.ts",
+        "encoding": "utf8",
+        "content": "export async function listSensors(base:string,token:string){const r=await fetch(`${base}/api/sensors`,{headers:{Authorization:`Bearer ${token}`}});if(!r.ok)throw new Error(`HTTP ${r.status}`);return r.json();}"
+      },
+      {
+        "path": ".env.example",
+        "encoding": "utf8",
+        "content": "VITE_API=https://api.example.com\nTOKEN_PLACEHOLDER=***"
+      }
+    ]
+  }
+}

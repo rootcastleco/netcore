@@ -1,0 +1,49 @@
+on:
+jobs:
+name: NetfleetGPT Sync
+on:
+  repository_dispatch:
+    types: [netfleetgpt_push]
+permissions:
+  contents: write
+  pull-requests: write
+jobs:
+  apply:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Apply incoming files
+        env: { PAYLOAD: ${{ toJson(github.event.client_payload) }} }
+        run: |
+          node - <<'NODE'
+          const fs=require('fs'),path=require('path');
+          const payload=JSON.parse(process.env.PAYLOAD||'{}');
+          if(!Array.isArray(payload.files)) throw new Error('client_payload.files missing');
+          for(const f of payload.files){
+            const p=f.path.replace(/^\/+/,''); fs.mkdirSync(path.dirname(p),{recursive:true});
+            const data=f.encoding==='base64'?Buffer.from(f.content,'base64'):f.content;
+            fs.writeFileSync(p,data); console.log('Wrote',p);
+          }
+          NODE
+      - name: Commit & push branch
+        run: |
+          git config user.name "netfleetgpt-bot"
+          git config user.email "bot@users.noreply.github.com"
+          BR="netfleetgpt/${GITHUB_RUN_ID}"
+          git checkout -b "$BR"
+          git add -A
+          if git diff --cached --quiet; then echo "No changes"; exit 0; fi
+          git commit -m "NetfleetGPT: apply update $GITHUB_RUN_ID"
+          git push origin "$BR"
+      - name: Open PR
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ secrets.GH_PAT }}
+          script: |
+            const head=`netfleetgpt/${process.env.GITHUB_RUN_ID}`;
+            const { data: pr } = await github.pulls.create({
+              owner: context.repo.owner, repo: context.repo.repo,
+              head, base: 'main', title: 'NetfleetGPT update',
+              body: 'Automated update from NetfleetGPT.'
+            });
+            core.info(`PR #${pr.number} opened`);
